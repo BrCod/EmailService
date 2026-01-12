@@ -35,19 +35,21 @@ services:
     ports:
       - "8080:8080"
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
-      RabbitMQ__HostName: rabbitmq
-      RabbitMQ__Port: 5672
-      RabbitMQ__UserName: guest
-      RabbitMQ__Password: guest
-      RabbitMQ__VirtualHost: /
-      RabbitMQ__Queue: email.send
-      RabbitMQ__PrefetchCount: 10
-      Smtp__Host: mailhog
-      Smtp__Port: 1025
-      Smtp__UseSsl: "false"
-      Smtp__FromAddress: no-reply@example.com
+      RabbitMQ__HostName: ${RABBITMQ_HOSTNAME:-rabbitmq}
+      RabbitMQ__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMQ__UserName: ${RABBITMQ_USERNAME:-guest}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-guest}
+      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMQ__Queue: ${RABBITMQ_QUEUE:-email.send}
+      RabbitMQ__PrefetchCount: ${RABBITMQ_PREFETCH_COUNT:-10}
+      Smtp__Host: ${SMTP_HOST:-mailhog}
+      Smtp__Port: ${SMTP_PORT:-1025}
+      Smtp__UseSsl: ${SMTP_USE_SSL:-false}
+      Smtp__UserName: ${SMTP_USERNAME}
+      Smtp__Password: ${SMTP_PASSWORD}
+      Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-no-reply@example.com}
     depends_on:
       rabbitmq:
         condition: service_healthy
