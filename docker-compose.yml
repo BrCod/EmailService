@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: email-service-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - email-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: email-service-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - email-network
+
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: src/EmailService.Api/Dockerfile
+    container_name: email-service-api
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: guest
+      RabbitMQ__Password: guest
+      RabbitMQ__VirtualHost: /
+      RabbitMQ__Queue: email.send
+      RabbitMQ__PrefetchCount: 10
+      Smtp__Host: mailhog
+      Smtp__Port: 1025
+      Smtp__UseSsl: "false"
+      Smtp__FromAddress: no-reply@example.com
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    networks:
+      - email-network
+
+networks:
+  email-network:
+    driver: bridge
