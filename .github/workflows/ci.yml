@@ -89,3 +89,17 @@ jobs:
           echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| EmailService.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| EmailPublisher.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+  
+  tag-release:
+    name: Tag for CD
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Tag and push
+        uses: ./.github/workflows/tag-and-push
+        with:
+          version-prefix: "v0.1"
