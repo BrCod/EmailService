@@ -1,0 +1,60 @@
+name: 'Tag and Push Release'
+description: 'Create semantic version tag and GitHub release'
+
+inputs:
+  github-token:
+    description: 'GitHub token for creating releases'
+    required: true
+  image-tag:
+    description: 'Docker image tag to include in release'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Determine version
+      id: version
+      shell: pwsh
+      run: |
+        $latestTag = git describe --tags --abbrev=0 2>$null
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($latestTag)) {
+          $latestTag = 'v0.0.0'
+        }
+        $latestTag = $latestTag.TrimStart('v')
+        $parts = $latestTag.Split('.')
+        $major = [int]$parts[0]
+        $minor = [int]$parts[1]
+        $patch = [int]$parts[2]
+        
+        # Increment patch version
+        $patch++
+        $newVersion = "v$major.$minor.$patch"
+        
+        echo "version=$newVersion" >> $env:GITHUB_OUTPUT
+        echo "version_no_v=$major.$minor.$patch" >> $env:GITHUB_OUTPUT
+    
+    - name: Create git tag
+      shell: bash
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag ${{ steps.version.outputs.version }}
+        git push origin ${{ steps.version.outputs.version }}
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: 'Release ${{ steps.version.outputs.version }}'
+        body: |
+          ## Email Service Release ${{ steps.version.outputs.version }}
+          
+          ### Docker Image
+          - Image: `${{ inputs.image-tag }}`
+          
+          ### Changelog
+          [View commits since last release](https://github.com/${{ github.repository }}/commits/${{ steps.version.outputs.version }})
+        draft: false
+        prerelease: false

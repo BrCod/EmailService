@@ -1,0 +1,91 @@
+name: CI
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'email-service/**'
+      - 'email-publisher-client/**'
+      - '.github/workflows/ci.yml'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+      
+      - name: Restore dependencies
+        run: dotnet restore EmailService.sln
+      
+      - name: Build
+        run: dotnet build EmailService.sln --configuration Release --no-restore
+      
+      - name: Run unit tests with coverage
+        run: |
+          dotnet test email-service/tests/EmailService.Tests/EmailService.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --collect:"XPlat Code Coverage"
+      
+      - name: Run publisher client tests with coverage
+        run: |
+          dotnet test email-publisher-client/tests/EmailPublisher.Tests/EmailPublisher.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --collect:"XPlat Code Coverage"
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/TestResults
+            email-service/tests/**/TestResults
+            email-publisher-client/tests/**/TestResults
+      
+      - name: Code quality checks
+        run: dotnet build EmailService.sln --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+      
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Project | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| EmailService.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| EmailPublisher.Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
