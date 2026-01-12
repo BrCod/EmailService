@@ -32,6 +32,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Set lowercase repository name
+        id: repo
+        run: |
+          echo "repo_lower=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+      
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -64,19 +69,19 @@ jobs:
       
       - name: Build email-service image
         run: |
-          docker build -f email-service/src/EmailService.Api/Dockerfile -t ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} email-service
-          docker tag ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:dev
-          docker tag ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha_tag }}
+          docker build -f email-service/src/EmailService.Api/Dockerfile -t ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} email-service
+          docker tag ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:dev
+          docker tag ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha_tag }}
       
       - name: Push email-service image
         run: |
-          docker push ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:dev
-          docker push ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha_tag }}
-          docker push ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+          docker push ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:dev
+          docker push ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha_tag }}
+          docker push ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
       
       - name: Export image name
         run: |
-          echo "EMAIL_SERVICE_IMAGE=${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}" >> $GITHUB_ENV
+          echo "EMAIL_SERVICE_IMAGE=ghcr.io/${{ steps.repo.outputs.repo_lower }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}" >> $GITHUB_ENV
           echo "EMAIL_SERVICE_SHA_TAG=${{ steps.commit.outputs.sha_tag }}" >> $GITHUB_ENV
   
   deploy:
