@@ -49,12 +49,20 @@ namespace EmailService.Infrastructure.RabbitMq
                 channel.BasicQos(prefetchSize: 0, prefetchCount: _opts.PrefetchCount, global: false);
                 _logger.LogInformation("QoS set to prefetch {PrefetchCount}", _opts.PrefetchCount);
 
-                // Use EventingBasicConsumer with Task.Run for fire-and-forget async handling
+                // Use EventingBasicConsumer with async handler for proper exception observation
                 var consumer = new EventingBasicConsumer(channel);
-                consumer.Received += (model, ea) =>
+                consumer.Received += async (model, ea) =>
                 {
-                    // Fire and forget: schedule async work on ThreadPool without blocking the consumer thread
-                    _ = Task.Run(async () => await HandleMessageAsync(channel, ea));
+                    try
+                    {
+                        await HandleMessageAsync(channel, ea);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Error while handling message with delivery tag {DeliveryTag}",
+                            ea.DeliveryTag);
+                    }
                 };
 
                 var consumerTag = channel.BasicConsume(queue: _opts.Queue, autoAck: false, consumer: consumer);
