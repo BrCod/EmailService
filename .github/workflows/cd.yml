@@ -1,85 +1,97 @@
-name: CD - Build and Push Docker
+name: CD
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'email-service/**'
-      - 'docker-compose.yml'
-      - '.github/workflows/cd.yml'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (staging|production)'
+        required: true
+        default: 'staging'
+      version:
+        description: 'Version tag to apply to images (defaults to run number)'
+        required: false
+  push:
+    tags:
+      - 'v*.*.*-*'
+
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/email-service
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: email-service
 
 jobs:
   build-and-push:
+    name: Build Email Service Image
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
       
-      - name: Restore and build
+      - name: Restore and publish
+        working-directory: email-service/src/EmailService.Api
         run: |
           dotnet restore
-          dotnet build --configuration Release --no-restore \
-            email-service/src/EmailService.Api/EmailService.Api.csproj
+          dotnet publish -c Release -o ../../publish
       
-      - name: Run tests
-        run: |
-          dotnet test email-service/tests/EmailService.Tests/EmailService.Tests.csproj \
-            --configuration Release \
-            --verbosity normal
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Log in to Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Extract version
+        id: version
+        run: |
+          VERSION="v0.1.${{ github.run_number }}-$(date +'%Y%m%d')"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
       
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: email-service
-          file: email-service/src/EmailService.Api/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Set commit SHA tag
+        id: commit
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "sha_tag=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
       
-      - name: Create GitHub Release
-        uses: ./.github/workflows/tag-and-push/action.yml
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Build email-service image
+        run: |
+          docker build -f email-service/src/EmailService.Api/Dockerfile -t ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} email-service
+          docker tag ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:dev
+          docker tag ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha_tag }}
+      
+      - name: Push email-service image
+        run: |
+          docker push ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:dev
+          docker push ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha_tag }}
+          docker push ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+      
+      - name: Export image name
+        run: |
+          echo "EMAIL_SERVICE_IMAGE=${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}" >> $GITHUB_ENV
+          echo "EMAIL_SERVICE_SHA_TAG=${{ steps.commit.outputs.sha_tag }}" >> $GITHUB_ENV
+  
+  deploy:
+    name: Deploy (Placeholder)
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    steps:
+      - name: Deployment summary
+        run: |
+          echo "Email Service Image: $EMAIL_SERVICE_IMAGE" >> deploy-summary.txt
+          echo "Environment: ${{ inputs.environment || 'staging' }}" >> deploy-summary.txt
+          echo "(Deployment step placeholder - integrate with deployment target here)" >> deploy-summary.txt
+      
+      - name: Upload deploy summary
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          image-tag: ${{ steps.meta.outputs.tags }}
+          name: deploy-summary
+          path: deploy-summary.txt
