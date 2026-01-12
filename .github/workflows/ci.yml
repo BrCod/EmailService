@@ -46,18 +46,10 @@ jobs:
             ${{ runner.os }}-nuget-
       
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore EmailService.sln
       
       - name: Build
-        run: |
-          dotnet build --configuration Release --no-restore \
-            email-service/src/EmailService.Domain/EmailService.Domain.csproj \
-            email-service/src/EmailService.Application/EmailService.Application.csproj \
-            email-service/src/EmailService.Infrastructure/EmailService.Infrastructure.csproj \
-            email-service/src/EmailService.Api/EmailService.Api.csproj \
-            email-service/tests/EmailService.Tests/EmailService.Tests.csproj \
-            email-publisher-client/src/EmailPublisher/EmailPublisher.csproj \
-            email-publisher-client/tests/EmailPublisher.Tests/EmailPublisher.Tests.csproj
+        run: dotnet build EmailService.sln --configuration Release --no-restore
       
       - name: Run unit tests with coverage
         run: |
@@ -86,8 +78,7 @@ jobs:
             email-publisher-client/tests/**/TestResults
       
       - name: Code quality checks
-        run: |
-          dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+        run: dotnet build EmailService.sln --configuration Release --no-restore /p:TreatWarningsAsErrors=true
       
       - name: Test summary
         if: always()
