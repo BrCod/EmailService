@@ -78,7 +78,7 @@ jobs:
           cache-to: type=gha,mode=max
       
       - name: Create GitHub Release
-        uses: ./.github/workflows/tag-and-push
+        uses: ./.github/workflows/tag-and-push/action.yml
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
