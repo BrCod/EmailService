@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'email-service/**'
+      - 'email-publisher-client/**'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build
+        run: |
+          dotnet build --configuration Release --no-restore \
+            email-service/src/EmailService.Domain/EmailService.Domain.csproj \
+            email-service/src/EmailService.Application/EmailService.Application.csproj \
+            email-service/src/EmailService.Infrastructure/EmailService.Infrastructure.csproj \
+            email-service/src/EmailService.Api/EmailService.Api.csproj \
+            email-publisher-client/src/EmailPublisher/EmailPublisher.csproj
+      
+      - name: Run unit tests
+        run: |
+          dotnet test email-service/tests/EmailService.Tests/EmailService.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx"
+      
+      - name: Run publisher client tests
+        run: |
+          dotnet test email-publisher-client/tests/EmailPublisher.Tests/EmailPublisher.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=publisher-test-results.trx"
+      
+      - name: Code quality checks
+        run: |
+          dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+      
+      - name: Report test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: .NET Test Results
+          path: '**/test-results.trx'
+          reporter: 'dotnet trx'
+          fail-on-error: true
