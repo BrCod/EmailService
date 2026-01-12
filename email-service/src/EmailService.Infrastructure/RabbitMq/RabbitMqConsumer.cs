@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using EmailService.Application.Commands.SendEmail;
+using EmailService.Application.Models;
 using EmailService.Domain.Entities;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -31,56 +32,111 @@ namespace EmailService.Infrastructure.RabbitMq
             
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var channel = _factory.CreateChannel();
-
-            // Ensure queue exists (durable, non-exclusive)
-            channel.QueueDeclare(_opts.Queue, durable: true, exclusive: false, autoDelete: false, arguments: null);
-
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.Received += async (ch, ea) =>
+            _logger.LogInformation("Starting RabbitMQ consumer for queue: {Queue}", _opts.Queue);
+            
+            try
             {
-                try
+                var channel = _factory.CreateChannel();
+                _logger.LogInformation("Channel created successfully");
+
+                // Ensure queue exists (durable, non-exclusive)
+                channel.QueueDeclare(_opts.Queue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+                _logger.LogInformation("Queue declared successfully");
+
+                // Set QoS explicitly
+                channel.BasicQos(prefetchSize: 0, prefetchCount: _opts.PrefetchCount, global: false);
+                _logger.LogInformation("QoS set to prefetch {PrefetchCount}", _opts.PrefetchCount);
+
+                // Use EventingBasicConsumer with async handler for proper exception observation
+                var consumer = new EventingBasicConsumer(channel);
+                consumer.Received += async (model, ea) =>
                 {
-                    var json = Encoding.UTF8.GetString(ea.Body.ToArray());
-                    using var doc = JsonDocument.Parse(json);
-                    var root = doc.RootElement;
-                    var type = root.GetProperty("type").GetString();
-                    if (type != "email.send.request")
+                    try
                     {
-                        _logger.LogWarning("Unexpected CloudEvent type: {Type}", type);
-                        channel.BasicAck(ea.DeliveryTag, false);
-                        return;
+                        await HandleMessageAsync(channel, ea);
                     }
-                    var dataJson = root.GetProperty("data").GetRawText();
-                    var emailMessage = JsonSerializer.Deserialize<EmailMessage>(dataJson);
-                    if (emailMessage is null)
+                    catch (Exception ex)
                     {
-                        throw new InvalidOperationException("Invalid email payload");
+                        _logger.LogError(ex,
+                            "Error while handling message with delivery tag {DeliveryTag}",
+                            ea.DeliveryTag);
                     }
+                };
 
-                    var cmd = new SendEmailCommand(emailMessage);
-                    var result = await _handler.HandleAsync(cmd, stoppingToken);
+                var consumerTag = channel.BasicConsume(queue: _opts.Queue, autoAck: false, consumer: consumer);
+                _logger.LogInformation("Consumer started with tag {ConsumerTag}, listening for messages", consumerTag);
+                
+                // Keep consumer alive until cancellation
+                await Task.Delay(Timeout.Infinite, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("RabbitMQ consumer stopping");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start RabbitMQ consumer");
+                throw;
+            }
+        }
 
-                    if (result.Success)
-                    {
-                        channel.BasicAck(ea.DeliveryTag, false);
-                    }
-                    else
-                    {
-                        channel.BasicNack(ea.DeliveryTag, false, requeue: false);
-                    }
+        private async Task HandleMessageAsync(object model, BasicDeliverEventArgs ea)
+        {
+            var channel = (IModel)model;
+            string? json = null;
+            try
+            {
+                _logger.LogInformation("Message received from queue");
+                json = Encoding.UTF8.GetString(ea.Body.ToArray());
+                
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                var type = root.GetProperty("type").GetString();
+                _logger.LogInformation("CloudEvent type: {Type}", type);
+                
+                if (type != "email.send.request")
+                {
+                    _logger.LogWarning("Unexpected CloudEvent type: {Type}", type);
+                    channel.BasicAck(ea.DeliveryTag, false);
+                    return;
                 }
-                catch (Exception ex)
+
+                var dataJson = root.GetProperty("data").GetRawText();
+                
+                var jsonOptions = new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true 
+                };
+                var emailDto = JsonSerializer.Deserialize<EmailRequestDto>(dataJson, jsonOptions);
+                if (emailDto is null)
                 {
-                    _logger.LogError(ex, "Message processing failed");
+                    throw new InvalidOperationException("Invalid email payload");
+                }
+
+                var emailMessage = emailDto.ToDomain();
+
+                _logger.LogInformation("Sending email via handler");
+                var cmd = new SendEmailCommand(emailMessage);
+                var result = await _handler.HandleAsync(cmd, CancellationToken.None);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Email sent successfully");
+                    channel.BasicAck(ea.DeliveryTag, false);
+                }
+                else
+                {
+                    _logger.LogWarning("Email sending failed: {Error}", result.Error);
                     channel.BasicNack(ea.DeliveryTag, false, requeue: false);
                 }
-            };
-
-            channel.BasicConsume(queue: _opts.Queue, autoAck: false, consumer: consumer);
-            return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Message processing failed. JSON: {Json}", json ?? "null");
+                channel.BasicNack(ea.DeliveryTag, false, requeue: false);
+            }
         }
     }
 }
