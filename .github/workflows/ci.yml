@@ -65,7 +65,7 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: .NET Test Results
-          path: 'TestResults/*.trx'
+          path: '**/TestResults/*.trx'
           reporter: 'dotnet-trx'
           fail-on-error: true
           path-replace-backslashes: false
