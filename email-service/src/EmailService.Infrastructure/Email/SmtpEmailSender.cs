@@ -47,14 +47,14 @@ namespace EmailService.Infrastructure.Email
             try
             {
                 var secure = _opts.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable;
-                await client.ConnectAsync(_opts.Host, _opts.Port, secure, ct);
+                await client.ConnectAsync(_opts.Host, _opts.Port, secure, ct).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(_opts.UserName))
                 {
-                    await client.AuthenticateAsync(_opts.UserName, _opts.Password, ct);
+                    await client.AuthenticateAsync(_opts.UserName, _opts.Password, ct).ConfigureAwait(false);
                 }
 
-                await client.SendAsync(mimeMessage, ct);
-                await client.DisconnectAsync(true, ct);
+                await client.SendAsync(mimeMessage, ct).ConfigureAwait(false);
+                await client.DisconnectAsync(true, ct).ConfigureAwait(false);
 
                 return new SendEmailResult { Status = "Sent", ProviderMessageId = mimeMessage.MessageId };
             }
