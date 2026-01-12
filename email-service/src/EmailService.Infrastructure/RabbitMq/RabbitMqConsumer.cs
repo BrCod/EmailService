@@ -87,7 +87,7 @@ namespace EmailService.Infrastructure.RabbitMq
 
                         _logger.LogInformation("Sending email via handler");
                         var cmd = new SendEmailCommand(emailMessage);
-                        var result = _handler.HandleAsync(cmd, stoppingToken).GetAwaiter().GetResult();
+                        var result = await _handler.HandleAsync(cmd, stoppingToken);
 
                         if (result.Success)
                         {
