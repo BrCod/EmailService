@@ -1,0 +1,60 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "email-service", "email-service", "{4EA2D959-2650-C40C-71E0-38BE54B985D4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6473F384-FE6F-0411-64BC-72BA3D6099ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailService.Api", "email-service\src\EmailService.Api\EmailService.Api.csproj", "{3C0971D1-E366-6A5C-00A4-E9F3635DF90B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailService.Application", "email-service\src\EmailService.Application\EmailService.Application.csproj", "{1071E419-8A00-1C9D-0EC4-F60488533577}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailService.Domain", "email-service\src\EmailService.Domain\EmailService.Domain.csproj", "{7223DA4E-AF20-1412-988E-291A5D4EC2D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailService.Infrastructure", "email-service\src\EmailService.Infrastructure\EmailService.Infrastructure.csproj", "{44990543-CD9F-B1FB-6113-EDC64C6DEEDF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailService.Shared", "email-service\src\EmailService.Shared\EmailService.Shared.csproj", "{792B204A-A5AC-5DC5-822D-AC90B910C398}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C0971D1-E366-6A5C-00A4-E9F3635DF90B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C0971D1-E366-6A5C-00A4-E9F3635DF90B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C0971D1-E366-6A5C-00A4-E9F3635DF90B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C0971D1-E366-6A5C-00A4-E9F3635DF90B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1071E419-8A00-1C9D-0EC4-F60488533577}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1071E419-8A00-1C9D-0EC4-F60488533577}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1071E419-8A00-1C9D-0EC4-F60488533577}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1071E419-8A00-1C9D-0EC4-F60488533577}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7223DA4E-AF20-1412-988E-291A5D4EC2D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7223DA4E-AF20-1412-988E-291A5D4EC2D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7223DA4E-AF20-1412-988E-291A5D4EC2D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7223DA4E-AF20-1412-988E-291A5D4EC2D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44990543-CD9F-B1FB-6113-EDC64C6DEEDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44990543-CD9F-B1FB-6113-EDC64C6DEEDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44990543-CD9F-B1FB-6113-EDC64C6DEEDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44990543-CD9F-B1FB-6113-EDC64C6DEEDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{792B204A-A5AC-5DC5-822D-AC90B910C398}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{792B204A-A5AC-5DC5-822D-AC90B910C398}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{792B204A-A5AC-5DC5-822D-AC90B910C398}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{792B204A-A5AC-5DC5-822D-AC90B910C398}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6473F384-FE6F-0411-64BC-72BA3D6099ED} = {4EA2D959-2650-C40C-71E0-38BE54B985D4}
+		{3C0971D1-E366-6A5C-00A4-E9F3635DF90B} = {6473F384-FE6F-0411-64BC-72BA3D6099ED}
+		{1071E419-8A00-1C9D-0EC4-F60488533577} = {6473F384-FE6F-0411-64BC-72BA3D6099ED}
+		{7223DA4E-AF20-1412-988E-291A5D4EC2D4} = {6473F384-FE6F-0411-64BC-72BA3D6099ED}
+		{44990543-CD9F-B1FB-6113-EDC64C6DEEDF} = {6473F384-FE6F-0411-64BC-72BA3D6099ED}
+		{792B204A-A5AC-5DC5-822D-AC90B910C398} = {6473F384-FE6F-0411-64BC-72BA3D6099ED}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {89D0B476-6109-4F55-8B53-35944B0B2458}
+	EndGlobalSection
+EndGlobal

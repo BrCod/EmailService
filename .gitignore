@@ -1,0 +1,90 @@
+# .NET
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.nuget.props
+*.nuget.targets
+.vs/
+.vscode/
+*.user
+*.userprefs
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.sln.iml
+*.suo
+*.vcxproj.filters
+*.vcxproj.user
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+*.iml
+
+# Test results
+TestResults/
+*.trx
+
+# Local environment
+appsettings.local.json
+appsettings.Development.json
+.env
+.env.local
+
+# Dependencies
+packages/
+.nuget/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+~*
+*.swp
+*.swo
+*~
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Docker
+.dockerignore
