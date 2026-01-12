@@ -36,8 +36,6 @@ namespace EmailService.Infrastructure.RabbitMq
         {
             _logger.LogInformation("Starting RabbitMQ consumer for queue: {Queue}", _opts.Queue);
             
-            var messageQueueTcs = new TaskCompletionSource<bool>();
-            
             try
             {
                 var channel = _factory.CreateChannel();
@@ -51,15 +49,18 @@ namespace EmailService.Infrastructure.RabbitMq
                 channel.BasicQos(prefetchSize: 0, prefetchCount: _opts.PrefetchCount, global: false);
                 _logger.LogInformation("QoS set to prefetch {PrefetchCount}", _opts.PrefetchCount);
 
-                // Use AsyncEventingBasicConsumer for proper async handling
-                var consumer = new AsyncEventingBasicConsumer(channel);
-                consumer.Received += async (model, ea) => await HandleMessageAsync((IModel)model, ea);
+                // Use EventingBasicConsumer with Task.Run for fire-and-forget async handling
+                var consumer = new EventingBasicConsumer(channel);
+                consumer.Received += (model, ea) =>
+                {
+                    // Fire and forget: schedule async work on ThreadPool without blocking the consumer thread
+                    _ = Task.Run(async () => await HandleMessageAsync(channel, ea));
+                };
 
                 var consumerTag = channel.BasicConsume(queue: _opts.Queue, autoAck: false, consumer: consumer);
                 _logger.LogInformation("Consumer started with tag {ConsumerTag}, listening for messages", consumerTag);
                 
-                // Keep the consumer alive until cancellation is requested
-                _ = messageQueueTcs.Task;
+                // Keep consumer alive until cancellation
                 await Task.Delay(Timeout.Infinite, stoppingToken);
             }
             catch (OperationCanceledException)
@@ -75,13 +76,12 @@ namespace EmailService.Infrastructure.RabbitMq
 
         private async Task HandleMessageAsync(object model, BasicDeliverEventArgs ea)
         {
-            _logger.LogInformation("Message received from queue");
             var channel = (IModel)model;
             string? json = null;
             try
             {
+                _logger.LogInformation("Message received from queue");
                 json = Encoding.UTF8.GetString(ea.Body.ToArray());
-                _logger.LogInformation("Message JSON: {Json}", json);
                 
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
@@ -96,7 +96,6 @@ namespace EmailService.Infrastructure.RabbitMq
                 }
 
                 var dataJson = root.GetProperty("data").GetRawText();
-                _logger.LogInformation("Deserializing email message from data: {DataJson}", dataJson);
                 
                 var jsonOptions = new JsonSerializerOptions 
                 { 

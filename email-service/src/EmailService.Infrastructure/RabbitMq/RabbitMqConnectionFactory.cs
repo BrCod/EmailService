@@ -1,3 +1,4 @@
+using System.Reflection;
 using EmailService.Infrastructure.Config;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
