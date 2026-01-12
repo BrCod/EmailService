@@ -43,14 +43,10 @@ namespace EmailService.Infrastructure.RabbitMq
             channel.BasicQos(0, _opts.PrefetchCount, false);
             
             // Enable async event dispatching for AsyncEventingBasicConsumer
-            try
+            var property = channel.GetType().GetProperty("DispatchConsumersAsync");
+            if (property?.CanWrite == true)
             {
-                dynamic dynamicChannel = channel;
-                dynamicChannel.DispatchConsumersAsync = true;
-            }
-            catch
-            {
-                // Property may not exist in all RabbitMQ.Client versions
+                property.SetValue(channel, true);
             }
             
             return channel;
