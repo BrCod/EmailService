@@ -34,7 +34,9 @@ jobs:
             email-service/src/EmailService.Application/EmailService.Application.csproj \
             email-service/src/EmailService.Infrastructure/EmailService.Infrastructure.csproj \
             email-service/src/EmailService.Api/EmailService.Api.csproj \
-            email-publisher-client/src/EmailPublisher/EmailPublisher.csproj
+            email-service/tests/EmailService.Tests/EmailService.Tests.csproj \
+            email-publisher-client/src/EmailPublisher/EmailPublisher.csproj \
+            email-publisher-client/tests/EmailPublisher.Tests/EmailPublisher.Tests.csproj
       
       - name: Run unit tests
         run: |
