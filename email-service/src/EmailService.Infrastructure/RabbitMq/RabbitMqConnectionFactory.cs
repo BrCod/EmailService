@@ -41,6 +41,18 @@ namespace EmailService.Infrastructure.RabbitMq
             var conn = GetConnection();
             var channel = conn.CreateModel();
             channel.BasicQos(0, _opts.PrefetchCount, false);
+            
+            // Enable async event dispatching for AsyncEventingBasicConsumer
+            try
+            {
+                dynamic dynamicChannel = channel;
+                dynamicChannel.DispatchConsumersAsync = true;
+            }
+            catch
+            {
+                // Property may not exist in all RabbitMQ.Client versions
+            }
+            
             return channel;
         }
 
