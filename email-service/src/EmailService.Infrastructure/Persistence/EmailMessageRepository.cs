@@ -13,11 +13,11 @@ namespace EmailService.Infrastructure.Persistence
             _logger = logger;
         }
 
-        public Task SaveAsync(EmailMessage message, SendEmailResult result, CancellationToken ct = default)
+        public async Task SaveAsync(EmailMessage message, SendEmailResult result, CancellationToken ct = default)
         {
             _logger.LogInformation("Persisting email result: Status={Status} Tenant={TenantId} Correlation={CorrelationId}", result.Status, message.TenantId, message.CorrelationId);
             // In production, insert into durable store
-            return Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
         }
     }
 }

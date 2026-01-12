@@ -28,8 +28,8 @@ namespace EmailService.Application.Commands.SendEmail
         {
             _validator.Validate(command.Message);
 
-            var result = await _sender.SendAsync(command.Message, ct);
-            await _repository.SaveAsync(command.Message, result, ct);
+            var result = await _sender.SendAsync(command.Message, ct).ConfigureAwait(false);
+            await _repository.SaveAsync(command.Message, result, ct).ConfigureAwait(false);
 
             _logger.LogInformation("Email send result: {Status} CorrelationId={CorrelationId}", result.Status, command.Message.CorrelationId);
 

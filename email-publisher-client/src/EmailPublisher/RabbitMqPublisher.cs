@@ -44,8 +44,8 @@ namespace EmailPublisher
 
             _channel.BasicPublish(exchange: string.Empty, routingKey: _opts.Queue, mandatory: true, basicProperties: props, body: payload.ToArray());
 
-            // Publisher confirms
-            await Task.Run(() => _channel.WaitForConfirmsOrDie(TimeSpan.FromSeconds(5)), ct);
+            // Publisher confirms - run on thread pool to avoid blocking
+            await Task.Run(() => _channel.WaitForConfirmsOrDie(TimeSpan.FromSeconds(5)), ct).ConfigureAwait(false);
         }
 
         public void Dispose()
