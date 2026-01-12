@@ -16,7 +16,10 @@ runs:
       id: version
       shell: pwsh
       run: |
-        $latestTag = git describe --tags --abbrev=0 2>$null || echo "v0.0.0"
+        $latestTag = git describe --tags --abbrev=0 2>$null
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($latestTag)) {
+          $latestTag = 'v0.0.0'
+        }
         $latestTag = $latestTag.TrimStart('v')
         $parts = $latestTag.Split('.')
         $major = [int]$parts[0]
