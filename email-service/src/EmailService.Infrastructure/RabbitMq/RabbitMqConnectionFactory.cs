@@ -1,4 +1,3 @@
-using System.Reflection;
 using EmailService.Infrastructure.Config;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -42,14 +41,6 @@ namespace EmailService.Infrastructure.RabbitMq
             var conn = GetConnection();
             var channel = conn.CreateModel();
             channel.BasicQos(0, _opts.PrefetchCount, false);
-            
-            // Enable async event dispatching for AsyncEventingBasicConsumer
-            var property = channel.GetType().GetProperty("DispatchConsumersAsync");
-            if (property?.CanWrite == true)
-            {
-                property.SetValue(channel, true);
-            }
-            
             return channel;
         }
 
